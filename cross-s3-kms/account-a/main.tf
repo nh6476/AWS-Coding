@@ -171,7 +171,21 @@ resource "aws_kms_key" "for_b_bucket_sse" {
           }
         }
       },
-
+      # ✅ 允许 A 账户的读取者主体：解密 + 描述 + 列表
+      {
+        Sid    = "AllowAReaderDecryptDescribeListOnCloudTrailKey",
+        Effect = "Allow",
+        Principal = {
+          AWS = var.a_reader_principals
+        },
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:ListAliases",
+          "kms:ListKeys"
+        ],
+        Resource = "*"
+      },
       # 允许 B 账户中的读取者主体（用户/角色）解密对象
       {
         Sid    = "AllowBReadersDecrypt",
@@ -246,6 +260,27 @@ resource "aws_s3_bucket_policy" "cloudtrail_bucket_policy" {
             "s3:x-amz-acl" = "bucket-owner-full-control"
           }
         }
+      },
+      # ✅ A 用户 ListBucket 权限（只能对桶 ARN）
+      {
+        Sid: "AllowAReaderList",
+        Effect: "Allow",
+        Principal = { AWS = var.a_reader_principals },
+        Action   = "s3:ListBucket",
+        Resource = "arn:aws:s3:::${aws_s3_bucket.cloudtrail_logs_bucket.id}",
+        Condition = {
+          StringLike = {
+            "s3:prefix" = "AWSLogs/${data.aws_caller_identity.a.account_id}/*"
+          }
+        }
+      },
+      # ✅ A 用户 GetObject 权限（只能对对象 ARN）
+      {
+        Sid: "AllowAReaderGet",
+        Effect = "Allow",
+        Principal = { AWS = var.a_reader_principals },
+        Action   = "s3:GetObject",
+        Resource = "arn:aws:s3:::${aws_s3_bucket.cloudtrail_logs_bucket.id}/AWSLogs/${data.aws_caller_identity.a.account_id}/*"
       },
       # 允许 CloudTrail 检查桶 ACL 和策略
       {
