@@ -1,0 +1,10 @@
+# 忽略 Terraform 本地状态和缓存
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
