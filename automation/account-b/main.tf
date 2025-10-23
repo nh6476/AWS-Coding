@@ -112,71 +112,35 @@ resource "aws_config_configuration_recorder_status" "recorder_status" {
 
 ###########################################################
 
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_file = "${path.module}/lambda/config-rule-ec2tag.py"
-  output_path = "${path.module}/lambda/config-rule-ec2tag.zip"
-}
+data "archive_file" "lambda_zip" {import smtplib
+import json
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-resource "aws_lambda_function" "config-rule-ec2tag" {
-  function_name = "config-rule-ec2tag"
-  role          = aws_iam_role.lambda_exec_role.arn
-  handler = "config-rule-ec2tag.lambda_handler"
-  runtime       = "python3.9"
-  filename      = data.archive_file.lambda_zip.output_path
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
-}
+# 邮箱配置
+smtp_server = 'smtp.163.com'
+smtp_port = 465
+sender_email = 'xxx@yeah.net'         # 替换为你的 yeah.net 邮箱
+recipient_email = 'your_target@email.com'  # 收件人邮箱
+auth_code = '你的授权码'               # 替换为你获取的授权码
 
-resource "aws_iam_role" "lambda_exec_role" {
-  name = "lambda-config-checker"
+def lambda_handler(event, context):
+    event_body = json.dumps(event, indent=2)
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Principal = {
-        Service = "lambda.amazonaws.com"
-      },
-      Action = "sts:AssumeRole"
-    }]
-  })
-}
+    message = MIMEMultipart()
+    message['From'] = sender_email
+    message['To'] = recipient_email
+    message['Subject'] = 'Lambda Event Notification'
+    message.attach(MIMEText(event_body, 'plain'))
 
-resource "aws_iam_role_policy" "lambda_exec_policy" {
-  name = "lambda-config-policy"
-  role = aws_iam_role.lambda_exec_role.id
+    try:
+        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+            server.login(sender_email, auth_code)
+            server.sendmail(sender_email, recipient_email, message.as_string())
+        return {'statusCode': 200, 'body': '邮件发送成功'}
+    except Exception as e:
+        return {'statusCode': 500, 'body': f'邮件发送失败: {str(e)}'}
 
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "config:PutEvaluations",
-          "config:GetResourceConfigHistory"
-        ],
-        Resource = "*"
-      },
-      {
-        Effect = "Allow",
-        Action = [
-          "ec2:DescribeInstances",
-          "ec2:DescribeTags"
-        ],
-        Resource = "*"
-      },
-      {
-        Effect = "Allow",
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ],
-        Resource = "*"
-      }
-    ]
-  })
-}
 
 
 ############################################################
