@@ -88,7 +88,7 @@ resource "aws_cloudwatch_event_permission" "allow_A_account" {
   principal       = "708365820815"
   statement_id    = "AllowBAccountToPutEvents"
   action          = "events:PutEvents"
-  event_bus_name  = "ec2-events-bus"
+  event_bus_name  = aws_cloudwatch_event_bus.custom_bus.name
 }
 
 
