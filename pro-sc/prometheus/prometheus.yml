@@ -1,0 +1,280 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+scrape_configs:
+- job_name: 'kubernetes-kube-state'
+  kubernetes_sd_configs:
+  - role: pod
+  relabel_configs:
+  - action: labelmap
+    regex: __meta_kubernetes_pod_label_(.+)
+  - source_labels: [__meta_kubernetes_namespace]
+    action: replace
+    target_label: kubernetes_namespace
+  - source_labels: [__meta_kubernetes_pod_name]
+    action: replace
+    target_label: kubernetes_pod_name
+  - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+    regex: "kube-state-metrics"
+    action: keep
+  - source_labels: ['__meta_kubernetes_pod_node_name']
+    regex: (.+)
+    action: replace
+    target_label: nodename
+
+#- job_name: 'etcd'
+#  tls_config:
+#    ca_file: /data/etc/ca.pem
+#    cert_file: /data/etc/etcd-client.pem
+#    key_file: /data/etc/etcd-client-key.pem
+#  scheme: https
+#  static_configs:
+#  - targets:
+#    - '10.1.1.101:2379'
+#    - '10.1.1.102:2379'
+#    - '10.1.1.103:2379'
+#
+#- job_name: 'kubernetes-apiservers'
+#  kubernetes_sd_configs:
+#  - role: endpoints
+#  scheme: https
+#  tls_config:
+#    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+#  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+#  relabel_configs:
+#  - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+#    action: keep
+#    regex: default;kubernetes;https
+#
+#- job_name: 'kubernetes-controller-manager'
+#  kubernetes_sd_configs:
+#  - role: endpoints
+#  scheme: http
+#  relabel_configs:
+#  - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+#    action: keep
+#    regex: default;kubernetes;https
+#  - source_labels: [__address__]
+#    action: replace
+#    regex: ([^:]+):(\d+)
+#    replacement: $1:10252
+#    target_label: __address__
+#
+#- job_name: 'kubernetes-scheduler'
+#  kubernetes_sd_configs:
+#  - role: endpoints
+#  scheme: http
+#  relabel_configs:
+#  - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+#    action: keep
+#    regex: default;kubernetes;https
+#  - source_labels: [__address__]
+#    action: replace
+#    regex: ([^:]+):(\d+)
+#    replacement: $1:10251
+#    target_label: __address__
+#
+#- job_name: 'kubernetes-kubelet'
+#  scheme: https
+#  tls_config:
+#    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+#  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+#  kubernetes_sd_configs:
+#  - role: node
+#  relabel_configs:
+#  - action: labelmap
+#    regex: __meta_kubernetes_node_label_(.+)
+#
+#- job_name: 'kubernetes-cadvisor'
+#  scheme: https
+#  metrics_path: /metrics/cadvisor
+#  tls_config:
+#    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+#  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+#  kubernetes_sd_configs:
+#  - role: node
+#  relabel_configs:
+#  - action: labelmap
+#    regex: __meta_kubernetes_node_label_(.+)
+#
+#- job_name: 'rook-ceph-mgr'
+#  kubernetes_sd_configs:
+#  - role: pod
+#  relabel_configs:
+#  - source_labels: [__meta_kubernetes_pod_label_app]
+#    action: keep
+#    regex: rook-ceph-mgr
+#  - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+#    action: keep
+#    regex: true
+#  - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+#    action: replace
+#    target_label: __metrics_path__
+#    regex: (.+)
+#  - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+#    action: replace
+#    regex: ([^:]+)(?::\d+)?;(\d+)
+#    replacement: $1:$2
+#    target_label: __address__
+#  - action: labelmap
+#    regex: __meta_kubernetes_pod_label_(.+)
+#  - source_labels: [__meta_kubernetes_namespace]
+#    action: replace
+#    target_label: kubernetes_namespace
+#  - source_labels: [__meta_kubernetes_pod_name]
+#    action: replace
+#    target_label: kubernetes_pod_name
+#
+#
+#- job_name: 'kubernetes-node-exporter'
+#  kubernetes_sd_configs:
+#  - role: pod
+#  relabel_configs:
+#  - action: labelmap
+#    regex: __meta_kubernetes_pod_label_(.+)
+#  - source_labels: [__meta_kubernetes_namespace]
+#    action: replace
+#    target_label: kubernetes_namespace
+#  - source_labels: [__meta_kubernetes_pod_name]
+#    action: replace
+#    target_label: kubernetes_pod_name
+#  - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+#    regex: "node-exporter"
+#    action: keep
+#  - source_labels: ['__meta_kubernetes_pod_node_name']
+#    regex: (.+)
+#    action: replace
+#    target_label: nodename
+#
+- job_name: 'blackbox_https_ingressroute_probe'
+  metrics_path: /probe
+  kubernetes_sd_configs:
+  - role: pod
+  params:
+    module: [http_2xx]
+  relabel_configs:
+  - source_labels: [__meta_kubernetes_pod_annotation_blackbox_scheme]
+    action: keep
+    regex: prometheus
+  - source_labels: [__meta_kubernetes_pod_annotation_blackbox_url, __meta_kubernetes_pod_annotation_blackbox_port, __meta_kubernetes_pod_annotation_blackbox_path]
+    action: replace
+    regex: (.+);(.+);(.+)
+    replacement: $1:$2$3
+    target_label: __param_target
+  - action: replace
+    target_label: __address__
+    replacement: blackbox-exporter.monitoring:9115
+  - source_labels: [__param_target]
+    target_label: instance
+  - action: labelmap
+    regex: __meta_kubernetes_pod_label_(.+)
+  - source_labels: [__meta_kubernetes_namespace]
+    action: replace
+    target_label: kubernetes_namespace
+  - source_labels: [__meta_kubernetes_pod_name]
+    action: replace
+    target_label: kubernetes_pod_name
+
+#- job_name: 'blackbox_http_pod_probe'
+#  metrics_path: /probe
+#  kubernetes_sd_configs:
+#  - role: pod
+#  params:
+#    module: [http_2xx]
+#  relabel_configs:
+#  - source_labels: [__meta_kubernetes_pod_annotation_blackbox_scheme]
+#    action: keep
+#    regex: http
+#  - source_labels: [__address__, __meta_kubernetes_pod_annotation_blackbox_port,  __meta_kubernetes_pod_annotation_blackbox_path]
+#    action: replace
+#    regex: ([^:]+)(?::\d+)?;(\d+);(.+)
+#    replacement: $1:$2$3
+#    target_label: __param_target
+#  - action: replace
+#    target_label: __address__
+#    replacement: blackbox-exporter.monitoring:9115
+#  - source_labels: [__param_target]
+#    target_label: instance
+#  - action: labelmap
+#    regex: __meta_kubernetes_pod_label_(.+)
+#  - source_labels: [__meta_kubernetes_namespace]
+#    action: replace
+#    target_label: kubernetes_namespace
+#  - source_labels: [__meta_kubernetes_pod_name]
+#    action: replace
+#    target_label: kubernetes_pod_name
+#
+#- job_name: 'blackbox_tcp_pod_probe'
+#  metrics_path: /probe
+#  kubernetes_sd_configs:
+#  - role: pod
+#  params:
+#    module: [tcp_connect]
+#  relabel_configs:
+#  - source_labels: [__meta_kubernetes_pod_annotation_blackbox_scheme]
+#    action: keep
+#    regex: tcp
+#  - source_labels: [__address__, __meta_kubernetes_pod_annotation_blackbox_port]
+#    action: replace
+#    regex: ([^:]+)(?::\d+)?;(\d+)
+#    replacement: $1:$2
+#    target_label: __param_target
+#  - action: replace
+#    target_label: __address__
+#    replacement: blackbox-exporter.monitoring:9115
+#  - source_labels: [__param_target]
+#    target_label: instance
+#  - action: labelmap
+#    regex: __meta_kubernetes_pod_label_(.+)
+#  - source_labels: [__meta_kubernetes_namespace]
+#    action: replace
+#    target_label: kubernetes_namespace
+#  - source_labels: [__meta_kubernetes_pod_name]
+#    action: replace
+#    target_label: kubernetes_pod_name
+
+#- job_name: 'kubernetes-services'
+#  metrics_path: /probe
+#  params:
+#    module: [http_2xx]
+#  kubernetes_sd_configs:
+#  - role: service
+#  relabel_configs:
+#  - source_labels: [__address__]
+#    target_label: __param_target
+#  - target_label: __address__
+#    replacement: blackbox-exporter.monitoring:9115
+#  - source_labels: [__param_target]
+#    target_label: instance
+#  - action: labelmap
+#    regex: __meta_kubernetes_service_label_(.+)
+#  - source_labels: [__meta_kubernetes_namespace]
+#    target_label: kubernetes_namespace
+#  - source_labels: [__meta_kubernetes_service_name]
+#    target_label: kubernetes_name
+
+#- job_name: 'kubernetes-ingresses'
+#  metrics_path: /probe
+#  params:
+#    module: [http_2xx]
+#  kubernetes_sd_configs:
+#  - role: ingress
+#  relabel_configs:
+#  - source_labels: [__meta_kubernetes_ingress_scheme,__address__,__meta_kubernetes_ingress_path]
+#    regex: (.+);(.+);(.+)
+#    replacement: ${1}://${2}${3}
+#    target_label: __param_target
+#  - target_label: __address__
+#    replacement: blackbox-exporter.monitoring:9115
+#  - source_labels: [__param_target]
+#    target_label: instance
+#  - action: labelmap
+#    regex: __meta_kubernetes_ingress_label_(.+)
+#  - source_labels: [__meta_kubernetes_namespace]
+#    target_label: kubernetes_namespace
+#  - source_labels: [__meta_kubernetes_ingress_name]
+#    target_label: kubernetes_name
+
+
+#rule_files:
+# - "/data/etc/rules.yml"

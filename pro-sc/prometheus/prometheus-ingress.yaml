@@ -1,0 +1,14 @@
+# apiVersion: traefik.containo.us/v1alpha1
+# kind: IngressRoute
+# metadata:
+#   name: prometheus
+#   namespace: monitoring
+# spec:
+#   entryPoints:
+#   - web
+#   routes:
+#   - match: Host(`prometheus.qytangk8s.com`)
+#     kind: Rule
+#     services:
+#     - name: prometheus
+#       port: 9090

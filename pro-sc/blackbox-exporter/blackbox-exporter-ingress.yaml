@@ -1,0 +1,14 @@
+# apiVersion: traefik.containo.us/v1alpha1
+# kind: IngressRoute
+# metadata:
+#   name: blackbox-exporter
+#   namespace: monitoring
+# spec:
+#   entryPoints:
+#   - web
+#   routes:
+#   - match: Host(`blackbox.qytangk8s.com`)
+#     kind: Rule
+#     services:
+#     - name: blackbox-exporter
+#       port: 9115

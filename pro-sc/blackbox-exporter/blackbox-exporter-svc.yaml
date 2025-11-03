@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+spec:
+  type: NodePort
+  selector:
+    app: blackbox-exporter
+  ports:
+    - name: blackbox-port
+      protocol: TCP
+      port: 9115
