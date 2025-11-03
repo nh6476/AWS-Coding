@@ -56,14 +56,12 @@ resource "aws_iam_instance_profile" "prometheus_profile" {
 
 
 
-
-
-
 resource "aws_security_group" "prometheus_sg" {
   name        = "prometheus-sg"
-  description = "Allow SSH and ping from anywhere; allow all outbound"
-  vpc_id      = var.vpc_id  # 请确保你定义了 vpc_id 变量或替换为实际 VPC ID
+  description = "Allow SSH, ping, and Prometheus Web UI; allow all outbound"
+  vpc_id      = var.vpc_id
 
+  # SSH
   ingress {
     description = "Allow SSH from anywhere"
     from_port   = 22
@@ -72,6 +70,7 @@ resource "aws_security_group" "prometheus_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # ICMP ping
   ingress {
     description = "Allow ping (ICMP) from anywhere"
     from_port   = -1
@@ -80,6 +79,16 @@ resource "aws_security_group" "prometheus_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Prometheus Web UI
+  ingress {
+    description = "Allow Prometheus Web UI (9090)"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # 建议改成你的办公 IP 或跳板机段
+  }
+
+  # 出向全部放行
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
@@ -92,3 +101,4 @@ resource "aws_security_group" "prometheus_sg" {
     Name = "prometheus-sg"
   }
 }
+

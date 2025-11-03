@@ -72,6 +72,23 @@ resource "aws_security_group" "cloudwatch_export_sg" {
     cidr_blocks = ["${aws_instance.prometheus.private_ip}/32"] # 或者 Prometheus 所在子网段
   }
 
+  # ICMP ping
+  ingress {
+    description = "Allow ping (ICMP) from anywhere"
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Allow Prometheus scrape"
+    from_port   = 9115
+    to_port     = 9115
+    protocol    = "tcp"
+    cidr_blocks = ["${aws_instance.prometheus.private_ip}/32"] # 或者 Prometheus 所在子网段
+  }
+
   # 出向：允许所有
   egress {
     description = "Allow all outbound traffic"
