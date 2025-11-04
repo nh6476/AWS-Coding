@@ -85,46 +85,66 @@ scrape_configs:
 #  - action: labelmap
 #    regex: __meta_kubernetes_node_label_(.+)
 #
-#- job_name: 'kubernetes-cadvisor'
-#  scheme: https
-#  metrics_path: /metrics/cadvisor
-#  tls_config:
-#    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-#  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-#  kubernetes_sd_configs:
-#  - role: node
-#  relabel_configs:
-#  - action: labelmap
-#    regex: __meta_kubernetes_node_label_(.+)
-#
-#- job_name: 'rook-ceph-mgr'
-#  kubernetes_sd_configs:
-#  - role: pod
-#  relabel_configs:
-#  - source_labels: [__meta_kubernetes_pod_label_app]
-#    action: keep
-#    regex: rook-ceph-mgr
-#  - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-#    action: keep
-#    regex: true
-#  - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-#    action: replace
-#    target_label: __metrics_path__
-#    regex: (.+)
-#  - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
-#    action: replace
-#    regex: ([^:]+)(?::\d+)?;(\d+)
-#    replacement: $1:$2
-#    target_label: __address__
-#  - action: labelmap
-#    regex: __meta_kubernetes_pod_label_(.+)
-#  - source_labels: [__meta_kubernetes_namespace]
-#    action: replace
-#    target_label: kubernetes_namespace
-#  - source_labels: [__meta_kubernetes_pod_name]
-#    action: replace
-#    target_label: kubernetes_pod_name
-#
+- job_name: 'kubernetes-cadvisor'
+  scheme: http
+  metrics_path: /metrics
+  tls_config:
+    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+  # kubernetes_sd_configs:   #--通过node抓取 cAdvisor 指标----##
+  # - role: node
+  # relabel_configs:
+  # - action: labelmap
+  #   regex: __meta_kubernetes_node_label_(.+)
+  # - target_label: __address__
+  #   replacement: $1:4194
+  #   source_labels: [__meta_kubernetes_node_name]
+  kubernetes_sd_configs:    #--通过pod+annotation 抓取 cAdvisor 指标----##
+    - role: pod        
+  relabel_configs:
+    - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_cascrape]
+      action: keep
+      regex: true
+    - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+      action: replace
+      target_label: __metrics_path__
+      regex: (.+)
+    - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+      action: replace
+      regex: ([^:]+)(?::\d+)?;(\d+)
+      replacement: $1:$2
+      target_label: __address__
+    - action: labelmap
+      regex: __meta_kubernetes_pod_(.+)
+
+# - job_name: 'rook-ceph-mgr'
+#   kubernetes_sd_configs:
+#   - role: pod
+#   relabel_configs:
+#   - source_labels: [__meta_kubernetes_pod_label_app]
+#     action: keep
+#     regex: rook-ceph-mgr
+#   - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+#     action: keep
+#     regex: true
+#   - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+#     action: replace
+#     target_label: __metrics_path__
+#     regex: (.+)
+#   - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+#     action: replace
+#     regex: ([^:]+)(?::\d+)?;(\d+)
+#     replacement: $1:$2
+#     target_label: __address__
+#   - action: labelmap
+#     regex: __meta_kubernetes_pod_label_(.+)
+#   - source_labels: [__meta_kubernetes_namespace]
+#     action: replace
+#     target_label: kubernetes_namespace
+#   - source_labels: [__meta_kubernetes_pod_name]
+#     action: replace
+#     target_label: kubernetes_pod_name
+
 #
 #- job_name: 'kubernetes-node-exporter'
 #  kubernetes_sd_configs:
@@ -146,7 +166,7 @@ scrape_configs:
 #    action: replace
 #    target_label: nodename
 #
-- job_name: 'blackbox_https_ingressroute_probe'
+- job_name: 'blackbox_https_Prometheus_probe'
   metrics_path: /probe
   kubernetes_sd_configs:
   - role: pod
@@ -276,5 +296,5 @@ scrape_configs:
 #    target_label: kubernetes_name
 
 
-#rule_files:
-# - "/data/etc/rules.yml"
+rule_files:
+- "/data/etc/rules.yml"
